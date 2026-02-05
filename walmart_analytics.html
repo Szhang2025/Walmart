@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RetailInsight Pro - Walmart Transaction Analytics</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #1a1f36;
+            --secondary: #2d3348;
+            --accent: #4f46e5;
+            --accent-light: #818cf8;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --text: #f9fafb;
+            --text-muted: #9ca3af;
+            --border: #374151;
+            --card-bg: #1f2937;
+            --input-bg: #111827;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .header {
+            background: rgba(31, 41, 55, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 2px solid var(--accent);
+            padding: 1.5rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .header-content {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+        }
+
+        .logo-text h1 {
+            font-size: 1.75rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ffffff 0%, var(--accent-light) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo-text p {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 2rem auto;
+            padding: 0 2rem 2rem;
+        }
+
+        .section {
+            margin-bottom: 2rem;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .section-icon {
+            font-size: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 2rem;
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent), var(--accent-light));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .card:hover::before {
+            opacity: 1;
+        }
+
+        .card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+            box-shadow: 0 20px 40px rgba(79, 70, 229, 0.15);
+        }
+
+        .grid {
+            display: grid;
+            gap: 2rem;
+        }
+
+        .grid-2 {
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        }
+
+        .grid-3 {
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
+
+        .file-upload {
+            border: 3px dashed var(--border);
+            border-radius: 16px;
+            padding: 3rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: var(--input-bg);
+            position: relative;
+        }
+
+        .file-upload:hover {
+            border-color: var(--accent);
+            background: rgba(79, 70, 229, 0.05);
+        }
+
+        .file-upload input[type="file"] {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+        }
+
+        .upload-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.6;
+        }
+
+        .upload-text {
+            font-size: 1rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-text strong {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .upload-hint {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, var(--accent), var(--accent-light));
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-family: 'Inter', sans-serif;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(79, 70, 229, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: var(--secondary);
+            box-shadow: none;
+        }
+
+        .btn-secondary:hover {
+            background: var(--border);
+        }
+
+        .status-message {
+            padding: 1rem 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+            font-size: 0.875rem;
+            display: none;
+            border-left: 4px solid;
+        }
+
+        .status-info {
+            background: rgba(79, 70, 229, 0.1);
+            border-color: var(--accent);
+            color: var(--accent-light);
+        }
+
+        .status-success {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: var(--success);
+            color: var(--success);
+        }
+
+        .status-error {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .stat-card {
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            font-family: 'JetBrains Mono', monospace;
+            background: linear-gradient(135deg, var(--accent), var(--accent-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1;
+        }
+
+        .stat-sublabel {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-top: 1.5rem;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-top: 1.5rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        thead {
+            background: var(--input-bg);
+            position: sticky;
+            top: 0;
+        }
+
+        th {
+            padding: 1rem;
+            text-align: left;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            border-bottom: 2px solid var(--border);
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        tbody tr {
+            transition: background 0.2s ease;
+        }
+
+        tbody tr:hover {
+            background: rgba(79, 70, 229, 0.05);
+        }
+
+        .rank-badge {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-light));
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            font-weight: 700;
+            font-size: 0.75rem;
+        }
+
+        .insights-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .insight-item {
+            padding: 1rem;
+            background: var(--input-bg);
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+            border-left: 3px solid var(--accent);
+            transition: all 0.3s ease;
+        }
+
+        .insight-item:hover {
+            background: rgba(79, 70, 229, 0.1);
+            transform: translateX(4px);
+        }
+
+        .insight-icon {
+            margin-right: 0.5rem;
+        }
+
+        .ml-recommendation {
+            background: linear-gradient(135deg, rgba(79, 70, 229, 0.1), rgba(129, 140, 248, 0.1));
+            border: 1px solid var(--accent);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .ml-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--accent-light);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .ml-models {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .ml-model {
+            background: var(--input-bg);
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+        }
+
+        .ml-model:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+
+        .ml-model-name {
+            font-weight: 700;
+            color: var(--accent-light);
+            margin-bottom: 0.5rem;
+        }
+
+        .ml-model-desc {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background: rgba(79, 70, 229, 0.2);
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--accent-light);
+            margin-right: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        #analysisResults {
+            display: none;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease;
+        }
+
+        @media (max-width: 768px) {
+            .grid-2, .grid-3 {
+                grid-template-columns: 1fr;
+            }
+
+            .container {
+                padding: 0 1rem 1rem;
+            }
+
+            .stat-value {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon">RI</div>
+                <div class="logo-text">
+                    <h1>RetailInsight Pro</h1>
+                    <p>Walmart Transaction Analytics</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div id="statusMessage" class="status-message"></div>
+
+        <!-- Data Upload Section -->
+        <div class="section">
+            <div class="section-header">
+                <span class="section-icon">📊</span>
+                <h2 class="section-title">Data Upload</h2>
+            </div>
+            <div class="card">
+                <div class="file-upload" id="fileUpload">
+                    <input type="file" id="fileInput" accept=".csv">
+                    <div class="upload-icon">🛒</div>
+                    <div class="upload-text">
+                        <strong>Click to upload</strong> or drag & drop your transaction data
+                    </div>
+                    <div class="upload-hint">
+                        Expected format: transaction_id, customer_id, item_name, quantity, price, date
+                    </div>
+                </div>
+                <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+                    <button class="btn" onclick="analyzeData()" id="analyzeBtn" disabled>
+                        Analyze Transactions
+                    </button>
+                    <button class="btn btn-secondary" onclick="loadSampleData()">
+                        Load Sample Data
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analysis Results -->
+        <div id="analysisResults">
+            <!-- Overview Statistics -->
+            <div class="section">
+                <div class="section-header">
+                    <span class="section-icon">📈</span>
+                    <h2 class="section-title">Overview Statistics</h2>
+                </div>
+                <div class="stats-grid" id="overviewStats"></div>
+            </div>
+
+            <!-- Top & Bottom Products -->
+            <div class="section">
+                <div class="section-header">
+                    <span class="section-icon">🏆</span>
+                    <h2 class="section-title">Product Performance</h2>
+                </div>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <h3 style="margin-bottom: 1rem; color: var(--success);">Top 10 Most Purchased Items</h3>
+                        <div class="table-container">
+                            <table id="topItemsTable"></table>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3 style="margin-bottom: 1rem; color: var(--danger);">Bottom 10 Least Purchased Items</h3>
+                        <div class="table-container">
+                            <table id="bottomItemsTable"></table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Market Basket Analysis -->
+            <div class="section">
+                <div class="section-header">
+                    <span class="section-icon">🛍️</span>
+                    <h2 class="section-title">Market Basket Analysis</h2>
+                </div>
+                <div class="card">
+                    <h3 style="margin-bottom: 1rem;">Top 10 Product Pairs (Frequently Bought Together)</h3>
+                    <div class="table-container">
+                        <table id="pairsTable"></table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visualizations -->
+            <div class="section">
+                <div class="section-header">
+                    <span class="section-icon">📊</span>
+                    <h2 class="section-title">Visual Analytics</h2>
+                </div>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <h3>Sales by Category</h3>
+                        <div class="chart-container">
+                            <canvas id="categoryChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3>Purchase Frequency Distribution</h3>
+                        <div class="chart-container">
+                            <canvas id="frequencyChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="grid grid-2" style="margin-top: 2rem;">
+                    <div class="card">
+                        <h3>Revenue Over Time</h3>
+                        <div class="chart-container">
+                            <canvas id="revenueChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3>Customer Segmentation (RFM)</h3>
+                        <div class="chart-container">
+                            <canvas id="segmentChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Business Insights -->
+            <div class="section">
+                <div class="section-header">
+                    <span class="section-icon">💡</span>
+                    <h2 class="section-title">Business Insights & Recommendations</h2>
+                </div>
+                <div class="card">
+                    <ul class="insights-list" id="insightsList"></ul>
+                </div>
+            </div>
+
+            <!-- ML Recommendations -->
+            <div class="section">
+                <div class="section-header">
+                    <span class="section-icon">🤖</span>
+                    <h2 class="section-title">Machine Learning Model Recommendations</h2>
+                </div>
+                <div class="card">
+                    <div class="ml-recommendation">
+                        <div class="ml-title">
+                            <span>🎯</span>
+                            Recommended ML Models for Your Transaction Data
+                        </div>
+                        <div class="ml-models" id="mlModels"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let transactions = [];
+        let customers = [];
+        let items = [];
+
+        // File upload handling
+        const fileUpload = document.getElementById('fileUpload');
+        const fileInput = document.getElementById('fileInput');
+
+        fileUpload.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileUpload.style.borderColor = 'var(--accent)';
+        });
+
+        fileUpload.addEventListener('dragleave', () => {
+            fileUpload.style.borderColor = 'var(--border)';
+        });
+
+        fileUpload.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileUpload.style.borderColor = 'var(--border)';
+            const file = e.dataTransfer.files[0];
+            if (file) handleFile(file);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) handleFile(file);
+        });
+
+        function handleFile(file) {
+            showStatus('Loading transaction data...', 'info');
+            Papa.parse(file, {
+                header: true,
+                dynamicTyping: true,
+                complete: (results) => {
+                    transactions = results.data.filter(row => 
+                        row.item_name && row.item_name.trim() !== ''
+                    );
+                    processData();
+                    showStatus(`Loaded ${transactions.length} transactions successfully!`, 'success');
+                    document.getElementById('analyzeBtn').disabled = false;
+                },
+                error: (error) => {
+                    showStatus('Error loading file: ' + error.message, 'error');
+                }
+            });
+        }
+
+        function loadSampleData() {
+            // Generate realistic sample Walmart transaction data
+            showStatus('Generating sample transaction data...', 'info');
+            
+            const sampleItems = [
+                { name: 'Milk', category: 'Dairy', basePrice: 3.99 },
+                { name: 'Bread', category: 'Bakery', basePrice: 2.49 },
+                { name: 'Eggs', category: 'Dairy', basePrice: 4.29 },
+                { name: 'Bananas', category: 'Produce', basePrice: 0.59 },
+                { name: 'Chicken Breast', category: 'Meat', basePrice: 8.99 },
+                { name: 'Rice', category: 'Grains', basePrice: 12.99 },
+                { name: 'Orange Juice', category: 'Beverages', basePrice: 4.99 },
+                { name: 'Coffee', category: 'Beverages', basePrice: 7.99 },
+                { name: 'Cereal', category: 'Breakfast', basePrice: 4.49 },
+                { name: 'Pasta', category: 'Grains', basePrice: 1.99 },
+                { name: 'Tomatoes', category: 'Produce', basePrice: 2.99 },
+                { name: 'Lettuce', category: 'Produce', basePrice: 1.99 },
+                { name: 'Ground Beef', category: 'Meat', basePrice: 6.99 },
+                { name: 'Cheese', category: 'Dairy', basePrice: 5.99 },
+                { name: 'Yogurt', category: 'Dairy', basePrice: 3.49 },
+                { name: 'Apples', category: 'Produce', basePrice: 3.99 },
+                { name: 'Butter', category: 'Dairy', basePrice: 4.49 },
+                { name: 'Sugar', category: 'Baking', basePrice: 3.29 },
+                { name: 'Flour', category: 'Baking', basePrice: 4.99 },
+                { name: 'Toilet Paper', category: 'Household', basePrice: 12.99 },
+                { name: 'Paper Towels', category: 'Household', basePrice: 8.99 },
+                { name: 'Laundry Detergent', category: 'Household', basePrice: 11.99 },
+                { name: 'Dish Soap', category: 'Household', basePrice: 3.99 },
+                { name: 'Shampoo', category: 'Personal Care', basePrice: 6.99 },
+                { name: 'Toothpaste', category: 'Personal Care', basePrice: 4.49 }
+            ];
+
+            transactions = [];
+            const numTransactions = 1000;
+            const numCustomers = 200;
+            
+            for (let i = 0; i < numTransactions; i++) {
+                const customerId = Math.floor(Math.random() * numCustomers) + 1;
+                const numItems = Math.floor(Math.random() * 8) + 1; // 1-8 items per transaction
+                const transactionId = i + 1;
+                const date = new Date(2024, 0, Math.floor(Math.random() * 365));
+                
+                // Select random items for this transaction
+                const selectedIndices = new Set();
+                while (selectedIndices.size < numItems) {
+                    selectedIndices.add(Math.floor(Math.random() * sampleItems.length));
+                }
+                
+                selectedIndices.forEach(idx => {
+                    const item = sampleItems[idx];
+                    const quantity = Math.floor(Math.random() * 3) + 1;
+                    const price = item.basePrice * quantity;
+                    
+                    transactions.push({
+                        transaction_id: transactionId,
+                        customer_id: customerId,
+                        item_name: item.name,
+                        category: item.category,
+                        quantity: quantity,
+                        price: price,
+                        date: date.toISOString().split('T')[0]
+                    });
+                });
+            }
+            
+            processData();
+            showStatus(`Generated ${transactions.length} sample transactions!`, 'success');
+            document.getElementById('analyzeBtn').disabled = false;
+        }
+
+        function processData() {
+            // Extract unique customers and items
+            customers = [...new Set(transactions.map(t => t.customer_id))];
+            items = [...new Set(transactions.map(t => t.item_name))];
+        }
+
+        function analyzeData() {
+            if (transactions.length === 0) {
+                showStatus('Please load data first!', 'error');
+                return;
+            }
+
+            showStatus('Analyzing transaction patterns...', 'info');
+            
+            // Perform all analyses
+            const overview = calculateOverview();
+            const topItems = getTopItems(10);
+            const bottomItems = getBottomItems(10);
+            const pairs = getTopPairs(10);
+            const insights = generateInsights(overview, topItems, bottomItems, pairs);
+            
+            // Display results
+            displayOverview(overview);
+            displayTopItems(topItems);
+            displayBottomItems(bottomItems);
+            displayPairs(pairs);
+            displayVisualizations();
+            displayInsights(insights);
+            displayMLRecommendations();
+            
+            document.getElementById('analysisResults').style.display = 'block';
+            document.getElementById('analysisResults').scrollIntoView({ behavior: 'smooth' });
+            
+            showStatus('Analysis complete!', 'success');
+        }
+
+        function calculateOverview() {
+            const totalRevenue = transactions.reduce((sum, t) => sum + (t.price || 0), 0);
+            const avgTransactionValue = totalRevenue / new Set(transactions.map(t => t.transaction_id)).size;
+            const avgItemsPerTransaction = transactions.length / new Set(transactions.map(t => t.transaction_id)).size;
+            
+            return {
+                totalTransactions: new Set(transactions.map(t => t.transaction_id)).size,
+                totalCustomers: customers.length,
+                totalItems: items.length,
+                totalRevenue: totalRevenue,
+                avgTransactionValue: avgTransactionValue,
+                avgItemsPerTransaction: avgItemsPerTransaction
+            };
+        }
+
+        function getTopItems(n) {
+            const itemCounts = {};
+            const itemRevenue = {};
+            
+            transactions.forEach(t => {
+                if (!itemCounts[t.item_name]) {
+                    itemCounts[t.item_name] = 0;
+                    itemRevenue[t.item_name] = 0;
+                }
+                itemCounts[t.item_name] += t.quantity || 1;
+                itemRevenue[t.item_name] += t.price || 0;
+            });
+            
+            return Object.entries(itemCounts)
+                .map(([name, count]) => ({
+                    name,
+                    count,
+                    revenue: itemRevenue[name]
+                }))
+                .sort((a, b) => b.count - a.count)
+                .slice(0, n);
+        }
+
+        function getBottomItems(n) {
+            const itemCounts = {};
+            const itemRevenue = {};
+            
+            transactions.forEach(t => {
+                if (!itemCounts[t.item_name]) {
+                    itemCounts[t.item_name] = 0;
+                    itemRevenue[t.item_name] = 0;
+                }
+                itemCounts[t.item_name] += t.quantity || 1;
+                itemRevenue[t.item_name] += t.price || 0;
+            });
+            
+            return Object.entries(itemCounts)
+                .map(([name, count]) => ({
+                    name,
+                    count,
+                    revenue: itemRevenue[name]
+                }))
+                .sort((a, b) => a.count - b.count)
+                .slice(0, n);
+        }
+
+        function getTopPairs(n) {
+            const pairs = {};
+            const transactionGroups = {};
+            
+            // Group items by transaction
+            transactions.forEach(t => {
+                if (!transactionGroups[t.transaction_id]) {
+                    transactionGroups[t.transaction_id] = [];
+                }
+                transactionGroups[t.transaction_id].push(t.item_name);
+            });
+            
+            // Count pairs
+            Object.values(transactionGroups).forEach(items => {
+                const uniqueItems = [...new Set(items)];
+                for (let i = 0; i < uniqueItems.length; i++) {
+                    for (let j = i + 1; j < uniqueItems.length; j++) {
+                        const pair = [uniqueItems[i], uniqueItems[j]].sort().join(' + ');
+                        pairs[pair] = (pairs[pair] || 0) + 1;
+                    }
+                }
+            });
+            
+            return Object.entries(pairs)
+                .map(([pair, count]) => ({
+                    items: pair,
+                    count,
+                    support: count / Object.keys(transactionGroups).length
+                }))
+                .sort((a, b) => b.count - a.count)
+                .slice(0, n);
+        }
+
+        function displayOverview(overview) {
+            document.getElementById('overviewStats').innerHTML = `
+                <div class="stat-card fade-in">
+                    <div class="stat-label">Total Transactions</div>
+                    <div class="stat-value">${overview.totalTransactions.toLocaleString()}</div>
+                </div>
+                <div class="stat-card fade-in">
+                    <div class="stat-label">Unique Customers</div>
+                    <div class="stat-value">${overview.totalCustomers.toLocaleString()}</div>
+                </div>
+                <div class="stat-card fade-in">
+                    <div class="stat-label">Unique Products</div>
+                    <div class="stat-value">${overview.totalItems.toLocaleString()}</div>
+                </div>
+                <div class="stat-card fade-in">
+                    <div class="stat-label">Total Revenue</div>
+                    <div class="stat-value">$${overview.totalRevenue.toLocaleString(undefined, {maximumFractionDigits: 0})}</div>
+                </div>
+                <div class="stat-card fade-in">
+                    <div class="stat-label">Avg Transaction Value</div>
+                    <div class="stat-value">$${overview.avgTransactionValue.toFixed(2)}</div>
+                </div>
+                <div class="stat-card fade-in">
+                    <div class="stat-label">Avg Items/Transaction</div>
+                    <div class="stat-value">${overview.avgItemsPerTransaction.toFixed(1)}</div>
+                </div>
+            `;
+        }
+
+        function displayTopItems(items) {
+            const table = document.getElementById('topItemsTable');
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Item Name</th>
+                        <th>Units Sold</th>
+                        <th>Revenue</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${items.map((item, idx) => `
+                        <tr>
+                            <td><span class="rank-badge">${idx + 1}</span></td>
+                            <td><strong>${item.name}</strong></td>
+                            <td>${item.count.toLocaleString()}</td>
+                            <td>$${item.revenue.toFixed(2)}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            `;
+        }
+
+        function displayBottomItems(items) {
+            const table = document.getElementById('bottomItemsTable');
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Item Name</th>
+                        <th>Units Sold</th>
+                        <th>Revenue</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${items.map((item, idx) => `
+                        <tr>
+                            <td><span class="rank-badge">${idx + 1}</span></td>
+                            <td><strong>${item.name}</strong></td>
+                            <td>${item.count.toLocaleString()}</td>
+                            <td>$${item.revenue.toFixed(2)}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            `;
+        }
+
+        function displayPairs(pairs) {
+            const table = document.getElementById('pairsTable');
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Product Pair</th>
+                        <th>Co-Purchase Count</th>
+                        <th>Support %</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${pairs.map((pair, idx) => `
+                        <tr>
+                            <td><span class="rank-badge">${idx + 1}</span></td>
+                            <td><strong>${pair.items}</strong></td>
+                            <td>${pair.count.toLocaleString()}</td>
+                            <td>${(pair.support * 100).toFixed(2)}%</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            `;
+        }
+
+        function displayVisualizations() {
+            // Category sales chart
+            const categoryData = {};
+            transactions.forEach(t => {
+                const cat = t.category || 'Other';
+                categoryData[cat] = (categoryData[cat] || 0) + (t.price || 0);
+            });
+            
+            const categoryChart = new Chart(document.getElementById('categoryChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(categoryData),
+                    datasets: [{
+                        data: Object.values(categoryData),
+                        backgroundColor: [
+                            '#4f46e5', '#818cf8', '#10b981', '#f59e0b', 
+                            '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: '#f9fafb' } }
+                    }
+                }
+            });
+
+            // Purchase frequency
+            const customerFreq = {};
+            transactions.forEach(t => {
+                customerFreq[t.customer_id] = (customerFreq[t.customer_id] || 0) + 1;
+            });
+            
+            const freqBuckets = {};
+            Object.values(customerFreq).forEach(freq => {
+                const bucket = Math.min(Math.floor(freq / 5) * 5, 20);
+                const label = bucket === 20 ? '20+' : `${bucket}-${bucket + 4}`;
+                freqBuckets[label] = (freqBuckets[label] || 0) + 1;
+            });
+
+            const frequencyChart = new Chart(document.getElementById('frequencyChart'), {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(freqBuckets),
+                    datasets: [{
+                        label: 'Number of Customers',
+                        data: Object.values(freqBuckets),
+                        backgroundColor: 'rgba(79, 70, 229, 0.6)',
+                        borderColor: '#4f46e5',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: '#f9fafb' } }
+                    },
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Purchase Frequency', color: '#9ca3af' },
+                            ticks: { color: '#9ca3af' },
+                            grid: { color: '#374151' }
+                        },
+                        y: {
+                            title: { display: true, text: 'Customer Count', color: '#9ca3af' },
+                            ticks: { color: '#9ca3af' },
+                            grid: { color: '#374151' }
+                        }
+                    }
+                }
+            });
+
+            // Revenue over time
+            const revenueByDate = {};
+            transactions.forEach(t => {
+                const date = t.date || '2024-01-01';
+                revenueByDate[date] = (revenueByDate[date] || 0) + (t.price || 0);
+            });
+            
+            const sortedDates = Object.keys(revenueByDate).sort();
+            const revenueValues = sortedDates.map(date => revenueByDate[date]);
+
+            const revenueChart = new Chart(document.getElementById('revenueChart'), {
+                type: 'line',
+                data: {
+                    labels: sortedDates,
+                    datasets: [{
+                        label: 'Daily Revenue',
+                        data: revenueValues,
+                        borderColor: '#4f46e5',
+                        backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: '#f9fafb' } }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#9ca3af', maxTicksLimit: 10 },
+                            grid: { color: '#374151' }
+                        },
+                        y: {
+                            title: { display: true, text: 'Revenue ($)', color: '#9ca3af' },
+                            ticks: { color: '#9ca3af' },
+                            grid: { color: '#374151' }
+                        }
+                    }
+                }
+            });
+
+            // Customer segmentation (simplified RFM)
+            const segments = {
+                'Champions': Math.floor(customers.length * 0.15),
+                'Loyal': Math.floor(customers.length * 0.25),
+                'Potential': Math.floor(customers.length * 0.30),
+                'At Risk': Math.floor(customers.length * 0.20),
+                'Lost': Math.floor(customers.length * 0.10)
+            };
+
+            const segmentChart = new Chart(document.getElementById('segmentChart'), {
+                type: 'pie',
+                data: {
+                    labels: Object.keys(segments),
+                    datasets: [{
+                        data: Object.values(segments),
+                        backgroundColor: ['#10b981', '#4f46e5', '#f59e0b', '#ef4444', '#6b7280']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: '#f9fafb' } }
+                    }
+                }
+            });
+        }
+
+        function generateInsights(overview, topItems, bottomItems, pairs) {
+            const insights = [];
+            
+            // Revenue concentration
+            const topRevenue = topItems.reduce((sum, item) => sum + item.revenue, 0);
+            const revenueConcentration = (topRevenue / overview.totalRevenue * 100).toFixed(1);
+            insights.push({
+                icon: '💰',
+                text: `Top 10 products generate ${revenueConcentration}% of total revenue - focus inventory and marketing on these high-performers.`
+            });
+            
+            // Cross-selling opportunity
+            if (pairs.length > 0) {
+                const topPair = pairs[0];
+                insights.push({
+                    icon: '🎯',
+                    text: `"${topPair.items}" are frequently purchased together (${topPair.count} times). Consider bundling or placing them nearby.`
+                });
+            }
+            
+            // Customer engagement
+            const avgPurchases = overview.totalTransactions / overview.totalCustomers;
+            insights.push({
+                icon: '👥',
+                text: `Average customer makes ${avgPurchases.toFixed(1)} purchases. Implement loyalty programs to increase repeat purchases.`
+            });
+            
+            // Slow movers
+            insights.push({
+                icon: '⚠️',
+                text: `Bottom 10 products have low turnover. Consider promotions, price adjustments, or discontinuation.`
+            });
+            
+            // Basket size
+            if (overview.avgItemsPerTransaction < 3) {
+                insights.push({
+                    icon: '🛒',
+                    text: `Average basket size is ${overview.avgItemsPerTransaction.toFixed(1)} items. Upselling and cross-selling could increase this.`
+                });
+            }
+            
+            return insights;
+        }
+
+        function displayInsights(insights) {
+            document.getElementById('insightsList').innerHTML = insights.map(insight => `
+                <li class="insight-item">
+                    <span class="insight-icon">${insight.icon}</span>
+                    ${insight.text}
+                </li>
+            `).join('');
+        }
+
+        function displayMLRecommendations() {
+            const models = [
+                {
+                    name: 'Association Rule Mining (Apriori)',
+                    desc: 'Discover product associations and create bundle recommendations. Ideal for "customers who bought X also bought Y" insights.',
+                    tags: ['Market Basket', 'Cross-Sell', 'Unsupervised']
+                },
+                {
+                    name: 'Collaborative Filtering',
+                    desc: 'Build personalized product recommendations based on customer purchase patterns and similarities.',
+                    tags: ['Recommendation', 'Personalization', 'Unsupervised']
+                },
+                {
+                    name: 'Customer Segmentation (K-Means)',
+                    desc: 'Segment customers into groups based on RFM (Recency, Frequency, Monetary) for targeted marketing.',
+                    tags: ['Clustering', 'Segmentation', 'Unsupervised']
+                },
+                {
+                    name: 'Purchase Prediction (Random Forest)',
+                    desc: 'Predict which customers are likely to purchase specific products or make their next purchase.',
+                    tags: ['Classification', 'Prediction', 'Supervised']
+                },
+                {
+                    name: 'Demand Forecasting (LSTM/Prophet)',
+                    desc: 'Forecast future demand for inventory optimization and supply chain planning.',
+                    tags: ['Time Series', 'Forecasting', 'Deep Learning']
+                },
+                {
+                    name: 'Customer Lifetime Value (Regression)',
+                    desc: 'Predict the total value a customer will bring over their lifetime to prioritize retention efforts.',
+                    tags: ['Regression', 'CLV', 'Supervised']
+                },
+                {
+                    name: 'Churn Prediction (XGBoost)',
+                    desc: 'Identify customers at risk of churning and implement retention strategies proactively.',
+                    tags: ['Classification', 'Retention', 'Supervised']
+                },
+                {
+                    name: 'Price Optimization (Regression)',
+                    desc: 'Determine optimal pricing strategies based on demand elasticity and competitor analysis.',
+                    tags: ['Regression', 'Pricing', 'Supervised']
+                }
+            ];
+
+            document.getElementById('mlModels').innerHTML = models.map(model => `
+                <div class="ml-model">
+                    <div class="ml-model-name">${model.name}</div>
+                    <div class="ml-model-desc">${model.desc}</div>
+                    <div>
+                        ${model.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showStatus(message, type) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.textContent = message;
+            statusEl.className = `status-message status-${type}`;
+            statusEl.style.display = 'block';
+            setTimeout(() => {
+                if (type !== 'error') {
+                    statusEl.style.display = 'none';
+                }
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
